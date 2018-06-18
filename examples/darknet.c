@@ -129,7 +129,7 @@ void speed(char *cfgfile, int tics)
     printf("\n%d evals, %f Seconds\n", tics, t);
     printf("Floating Point Operations: %.2f Bn\n", (float)ops/1000000000.);
     printf("FLOPS: %.2f Bn\n", (float)ops/1000000000.*tics/t);
-    printf("Speed: %f sec/eval\n", t/tics);
+    printf("Speed: %f ms/eval\n", (t/tics)*1000);
     printf("Speed: %f Hz\n", tics/t);
 }
 

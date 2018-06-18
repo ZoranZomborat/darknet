@@ -7,9 +7,20 @@
 #include "box.h"
 #include "image.h"
 #include "demo.h"
+
+#include "arduino.h"
+
 #include <sys/time.h>
 
 #define DEMO 1
+
+#ifndef OPENCV
+#define OPENCV
+#endif
+
+#ifndef ARDUINO_CTRL
+#define ARDUINO_CTRL
+#endif
 
 #ifdef OPENCV
 
@@ -24,7 +35,7 @@ static int buff_index = 0;
 static CvCapture * cap;
 static IplImage  * ipl;
 static float fps = 0;
-static float demo_thresh = 0;
+static float demo_thresh = .5;
 static float demo_hier = .5;
 static int running = 0;
 
@@ -35,6 +46,12 @@ static float *avg;
 static int demo_done = 0;
 static int demo_total = 0;
 double demo_time;
+
+static char ex=0;
+static int serial_fd;
+
+#define SKIP_FRAMES 12
+static int frame_count=0;
 
 detection *get_network_boxes(network *net, int w, int h, float thresh, float hier, int *map, int relative, int *num);
 
@@ -90,47 +107,29 @@ void *detect_in_thread(void *ptr)
 
     layer l = net->layers[net->n-1];
     float *X = buff_letter[(buff_index+2)%3].data;
+
     network_predict(net, X);
 
-    /*
-       if(l.type == DETECTION){
-       get_detection_boxes(l, 1, 1, demo_thresh, probs, boxes, 0);
-       } else */
     remember_network(net);
     detection *dets = 0;
     int nboxes = 0;
     dets = avg_predictions(net, &nboxes);
-
-
-    /*
-       int i,j;
-       box zero = {0};
-       int classes = l.classes;
-       for(i = 0; i < demo_detections; ++i){
-       avg[i].objectness = 0;
-       avg[i].bbox = zero;
-       memset(avg[i].prob, 0, classes*sizeof(float));
-       for(j = 0; j < demo_frame; ++j){
-       axpy_cpu(classes, 1./demo_frame, dets[j][i].prob, 1, avg[i].prob, 1);
-       avg[i].objectness += dets[j][i].objectness * 1./demo_frame;
-       avg[i].bbox.x += dets[j][i].bbox.x * 1./demo_frame;
-       avg[i].bbox.y += dets[j][i].bbox.y * 1./demo_frame;
-       avg[i].bbox.w += dets[j][i].bbox.w * 1./demo_frame;
-       avg[i].bbox.h += dets[j][i].bbox.h * 1./demo_frame;
-       }
-    //copy_cpu(classes, dets[0][i].prob, 1, avg[i].prob, 1);
-    //avg[i].objectness = dets[0][i].objectness;
-    }
-     */
 
     if (nms > 0) do_nms_obj(dets, nboxes, l.classes, nms);
 
     printf("\033[2J");
     printf("\033[1;1H");
     printf("\nFPS:%.1f\n",fps);
+    printf("frame_count %d\n",frame_count);
     printf("Objects:\n\n");
+
     image display = buff[(buff_index+2) % 3];
     draw_detections(display, dets, nboxes, demo_thresh, demo_names, demo_alphabet, demo_classes);
+#ifdef ARDUINO_CTRL
+    if(frame_count >= SKIP_FRAMES)
+        track_detections(display, dets, nboxes, demo_thresh);
+    frame_count++;
+#endif
     free_detections(dets, nboxes);
 
     demo_index = (demo_index + 1)%demo_frame;
@@ -196,6 +195,10 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
     set_batch_network(net, 1);
     pthread_t detect_thread;
     pthread_t fetch_thread;
+
+#ifdef ARDUINO_CTRL
+    track_init();
+#endif
 
     srand(2222222);
 
@@ -264,6 +267,11 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
         pthread_join(detect_thread, 0);
         ++count;
     }
+
+#ifdef ARDUINO_CTRL
+    track_end();
+#endif
+
 }
 
 /*
