@@ -29,11 +29,11 @@ void update_pan() {
     serial_tryWrite(PAN_COMMAND);
     serial_tryWrite(pan_pos);
 
-//    serial_tryRead(&echo);
-//    if(echo != pan_pos){
-//        printf("Sent pan %d got %d\n",pan_pos ,echo);
-//        error("Echo mismatch");
-//    }
+    serial_tryRead(&echo);
+    if(echo != pan_pos){
+        printf("Sent pan %d got %d\n",pan_pos ,echo);
+        error("Echo mismatch");
+    }
 }
 
 void update_tilt() {
@@ -41,11 +41,11 @@ void update_tilt() {
     serial_tryWrite(TILT_COMMAND);
     serial_tryWrite(tilt_pos);
 
-//    serial_tryRead(&echo);
-//    if(echo != tilt_pos){
-//        printf("Sent tilt %d got %d\n",tilt_pos ,echo);
-//        error("Echo mismatch");
-//    }
+    serial_tryRead(&echo);
+    if(echo != tilt_pos){
+        printf("Sent tilt %d got %d\n",tilt_pos ,echo);
+        error("Echo mismatch");
+    }
 }
 
 void update_pan_tilt() {

@@ -35,7 +35,9 @@
 #define PAN_STEP         1
 #define TILT_STEP        1
 
+void track_init();
 void track_detections(image im, detection *dets, int num, float thresh);
+void track_end();
 
 #endif
 
