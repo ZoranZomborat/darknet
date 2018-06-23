@@ -241,6 +241,8 @@ void draw_detections(image im, detection *dets, int num, float thresh, char **na
     int i,j;
 
     for(i = 0; i < num; ++i){
+        if(dets->objectness == 0)
+            continue;
         char labelstr[4096] = {0};
         int class = -1;
         for(j = 0; j < classes; ++j){
@@ -252,7 +254,7 @@ void draw_detections(image im, detection *dets, int num, float thresh, char **na
                     strcat(labelstr, ", ");
                     strcat(labelstr, names[j]);
                 }
-                printf("idx %d %s: %.0f%%\n", j, names[j], dets[i].prob[j]*100);
+                //printf("idx %d %s: %.0f%%\n", j, names[j], dets[i].prob[j]*100);
             }
         }
         if(class >= 0){

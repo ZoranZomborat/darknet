@@ -7,7 +7,12 @@
 static uint8_t pan_pos;
 static uint8_t tilt_pos;
 
+static uint8_t readback_pan = 0;
+static uint8_t readback_tilt = 0;
+
 static int fd;
+static int readback_counter = 0;
+static int readback_val = 0;
 
 void serial_tryWrite(uint8_t val) {
     int status = serialport_writebyte(fd, val);
@@ -15,13 +20,24 @@ void serial_tryWrite(uint8_t val) {
 }
 
 void serial_tryRead(uint8_t* val){
-
     int status = serialport_read_until(fd, val, NULL, 1, 1000);
     if(status < 0) {
         printf("read status %d\n", status);
         error("Couldn't read data over serial.\n");
     }
+    //printf("r %d \n", *val);
+}
 
+void serial_tryClose() {
+
+    int status;
+    uint8_t echo;
+    //Read all data left on serial
+    do {
+        status = serialport_read_until(fd, &echo, NULL, 1, 1000);
+    } while (status == 0);
+
+    serialport_close(fd);
 }
 
 void update_pan() {
@@ -29,22 +45,29 @@ void update_pan() {
     serial_tryWrite(PAN_COMMAND);
     serial_tryWrite(pan_pos);
 
-    serial_tryRead(&echo);
-    if(echo != pan_pos){
-        printf("Sent pan %d got %d\n",pan_pos ,echo);
-        error("Echo mismatch");
+    if(readback_counter > 0) {
+        serial_tryRead(&echo);
+        if(echo != readback_pan){
+            printf("Sent pan %d got %d\n",readback_pan ,echo);
+            error("Echo mismatch");
+        }
     }
 }
 
 void update_tilt() {
     uint8_t echo;
+
+    //printf("\n\nstart command\n");
+
     serial_tryWrite(TILT_COMMAND);
     serial_tryWrite(tilt_pos);
 
-    serial_tryRead(&echo);
-    if(echo != tilt_pos){
-        printf("Sent tilt %d got %d\n",tilt_pos ,echo);
-        error("Echo mismatch");
+    if(readback_counter > 0) {
+        serial_tryRead(&echo);
+        if(echo != readback_tilt){
+            printf("Sent tilt %d got %d\n",readback_tilt ,echo);
+            error("Echo mismatch");
+        }
     }
 }
 
@@ -54,15 +77,43 @@ void update_pan_tilt() {
     update_pan();
     update_tilt();
 
+    if(readback_counter == 0){
+        readback_counter = 1;
+    }
+    readback_tilt = tilt_pos;
+    readback_pan = pan_pos;
+
 }
 
-void track_init() {
+void wake_up() {
+    uint8_t echo;
+    uint32_t status;
+
+    //Read all data left on serial
+    do {
+        status = serialport_read_until(fd, &echo, NULL, 1, 1000);
+    } while (status == 0);
+    do {
+        serial_tryWrite(1);
+        serial_tryWrite(WAKE_UP_COMMAND);
+        status = serialport_read_until(fd, &echo, NULL, 1, 1000);
+    } while(status);
+
+    if(echo != WAKE_UP_COMMAND){
+        printf("Sent command %d got %d\n",pan_pos ,echo);
+        error("Echo mismatch");
+    }
+}
+
+void ard_serial_init() {
 
     fd = serialport_init(DEVPORT, BAUDRATE);
     if(fd < 0) error("Couldn't open serial port.\n");
 
     pan_pos = PAN_START;
     tilt_pos = TILT_START;
+
+    wake_up();
 
 }
 
@@ -74,7 +125,7 @@ void limit_val(uint8_t *val){
         *val = U_LIMIT;
 }
 
-void track_detections(image im, detection *dets, int num, float thresh)
+void track_detections(image im, detection *dets, int num, float thresh, int classIdx)
 {
     int best_detect = -1;
     float max_area = 0.0f;
@@ -86,7 +137,8 @@ void track_detections(image im, detection *dets, int num, float thresh)
     int det_w_center;
 
     for(int i = 0; i < num; ++i){
-        if (dets[i].prob[0] <= thresh){
+
+        if (dets[i].prob[classIdx] <= thresh){
             continue;
         }
 
@@ -100,7 +152,6 @@ void track_detections(image im, detection *dets, int num, float thresh)
 
     }
 
-    printf("best_detact %d\n",best_detect);
     if(best_detect < 0)
         return;
 
@@ -116,7 +167,7 @@ void track_detections(image im, detection *dets, int num, float thresh)
     if(top < 0) top = 0;
     if(bot > im.h-1) bot = im.h-1;
 
-    printf("left %d right %d top %d bot %d\n", left, right, top, bot);
+    //printf("left %d right %d top %d bot %d\n", left, right, top, bot);
 
     det_h_center = top + ((bot - top) >> 1);
     det_w_center = left + ((right - left) >> 1);
@@ -139,13 +190,13 @@ void track_detections(image im, detection *dets, int num, float thresh)
         limit_val(&pan_pos);
     }
 
-    printf("tilt_pos %d pan_pos %d\n", tilt_pos, pan_pos);
+    //printf("tilt_pos %d pan_pos %d\n", tilt_pos, pan_pos);
     update_pan_tilt();
 
 }
 
-void track_end() {
-    serialport_close(fd);
+void ard_serial_end() {
+    serial_tryClose();
 }
 
 

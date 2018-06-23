@@ -748,7 +748,7 @@ void free_detections(detection *dets, int n);
 void reset_network_state(network *net, int b);
 
 char **get_labels(char *filename);
-void do_nms_obj(detection *dets, int total, int classes, float thresh);
+void process_detections(detection *dets, int *total, int classes, float thresh);
 void do_nms_sort(detection *dets, int total, int classes, float thresh);
 
 matrix make_matrix(int rows, int cols);

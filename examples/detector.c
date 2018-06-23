@@ -520,7 +520,7 @@ void validate_detector_recall(char *cfgfile, char *weightfile)
         network_predict(net, sized.data);
         int nboxes = 0;
         detection *dets = get_network_boxes(net, sized.w, sized.h, thresh, .5, 0, 1, &nboxes);
-        if (nms) do_nms_obj(dets, nboxes, 1, nms);
+        if (nms) process_detections(dets, nboxes, 1, nms);
 
         char labelpath[4096];
         find_replace(path, "images", "labels", labelpath);

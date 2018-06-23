@@ -45,7 +45,7 @@ static float **predictions;
 static float *avg;
 static int demo_done = 0;
 static int demo_total = 0;
-double demo_time;
+double elapsed_time;
 
 static char ex=0;
 static int serial_fd;
@@ -115,7 +115,7 @@ void *detect_in_thread(void *ptr)
     int nboxes = 0;
     dets = avg_predictions(net, &nboxes);
 
-    if (nms > 0) do_nms_obj(dets, nboxes, l.classes, nms);
+    if (nms > 0) process_detections(dets, nboxes, l.classes, nms);
 
     printf("\033[2J");
     printf("\033[1;1H");
@@ -127,7 +127,7 @@ void *detect_in_thread(void *ptr)
     draw_detections(display, dets, nboxes, demo_thresh, demo_names, demo_alphabet, demo_classes);
 #ifdef ARDUINO_CTRL
     if(frame_count >= SKIP_FRAMES)
-        track_detections(display, dets, nboxes, demo_thresh);
+        track_detections(display, dets, nboxes, demo_thresh, 0);
     frame_count++;
 #endif
     free_detections(dets, nboxes);
@@ -197,7 +197,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
     pthread_t fetch_thread;
 
 #ifdef ARDUINO_CTRL
-    track_init();
+    ard_serial_init();
 #endif
 
     srand(2222222);
@@ -248,15 +248,15 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
         }
     }
 
-    demo_time = what_time_is_it_now();
+    elapsed_time = what_time_is_it_now();
 
     while(!demo_done){
         buff_index = (buff_index + 1) %3;
         if(pthread_create(&fetch_thread, 0, fetch_in_thread, 0)) error("Thread creation failed");
         if(pthread_create(&detect_thread, 0, detect_in_thread, 0)) error("Thread creation failed");
         if(!prefix){
-            fps = 1./(what_time_is_it_now() - demo_time);
-            demo_time = what_time_is_it_now();
+            fps = 1./(what_time_is_it_now() - elapsed_time);
+            elapsed_time = what_time_is_it_now();
             display_in_thread(0);
         }else{
             char name[256];
@@ -269,7 +269,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
     }
 
 #ifdef ARDUINO_CTRL
-    track_end();
+    ard_serial_end();
 #endif
 
 }

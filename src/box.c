@@ -18,10 +18,11 @@ int nms_comparator(const void *pa, const void *pb)
     return 0;
 }
 
-void do_nms_obj(detection *dets, int total, int classes, float thresh)
+void process_detections(detection *dets, int *total, int classes, float thresh)
 {
     int i, j, k;
-    k = total-1;
+    int local_total = *total;
+    k = local_total-1;
     for(i = 0; i <= k; ++i){
         if(dets[i].objectness == 0){
             detection swap = dets[i];
@@ -31,17 +32,21 @@ void do_nms_obj(detection *dets, int total, int classes, float thresh)
             --i;
         }
     }
-    total = k+1;
+    //Remove detections that contain no object
+    local_total = k+1;
 
-    for(i = 0; i < total; ++i){
+    for(i = 0; i < local_total; ++i){
         dets[i].sort_class = -1;
     }
+    //Further along sort the valid objectness values
+    qsort(dets, local_total, sizeof(detection), nms_comparator);
 
-    qsort(dets, total, sizeof(detection), nms_comparator);
-    for(i = 0; i < total; ++i){
+    //Compare intersection over union of each remaining boxes
+    //if overlapping, clear data of second box
+    for(i = 0; i < local_total; ++i){
         if(dets[i].objectness == 0) continue;
         box a = dets[i].bbox;
-        for(j = i+1; j < total; ++j){
+        for(j = i+1; j < local_total; ++j){
             if(dets[j].objectness == 0) continue;
             box b = dets[j].bbox;
             if (box_iou(a, b) > thresh){
@@ -52,6 +57,8 @@ void do_nms_obj(detection *dets, int total, int classes, float thresh)
             }
         }
     }
+
+    *total = local_total;
 }
 
 

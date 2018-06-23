@@ -24,20 +24,26 @@
 #define TILT_START      U_LIMIT
 
 
+//#define BAUDRATE        1000000
 #define BAUDRATE        115200
 #define DEVPORT         "/dev/ttyUSB0"
 
-#define PAN_COMMAND     48
-#define TILT_COMMAND    49
+#define PAN_COMMAND         48
+#define TILT_COMMAND        49
+#define WAKE_UP_COMMAND     50
+#define SHUT_DOWN_COMMAND   51
+
 
 #define CENTER_WINDOW   50
+
+#define READBACK_TIMER  16
 
 #define PAN_STEP         1
 #define TILT_STEP        1
 
-void track_init();
-void track_detections(image im, detection *dets, int num, float thresh);
-void track_end();
+void ard_serial_init();
+void track_detections(image im, detection *dets, int num, float thresh, int classIdx);
+void ard_serial_end();
 
 #endif
 

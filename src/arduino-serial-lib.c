@@ -56,6 +56,7 @@ int serialport_init(const char* serialport, int baud)
     case 38400:  brate=B38400;  break;
     case 57600:  brate=B57600;  break;
     case 115200: brate=B115200; break;
+    case 1000000: brate=B1000000; break;
     }
     cfsetispeed(&toptions, brate);
     cfsetospeed(&toptions, brate);
@@ -100,7 +101,7 @@ int serialport_close( int fd )
 int serialport_writebyte( int fd, uint8_t b)
 {
     int n = write(fd,&b,1);
-    printf("%d\n",b);
+    //printf("w %d\n", b);
     if( n!=1)
         return -1;
     return 0;

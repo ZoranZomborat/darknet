@@ -7,6 +7,11 @@ Servo tilt_servo;
 unsigned char pan_pos = 0;
 unsigned char tilt_pos = 0;
 
+long long int readback_val = 0;
+unsigned char readback_counter = 0;
+
+unsigned int synched = 0;
+
 byte incomingByte;
 
 void reset_servo(){
@@ -25,6 +30,7 @@ void attach() {
 }
 
 void setup() {
+  //Serial.begin(1000000);
   Serial.begin(115200);
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, LOW);
@@ -32,11 +38,14 @@ void setup() {
   reset_servo();
 }
 
+int state = HIGH;
+
 void lock() {
   reset_servo();
-  digitalWrite(LED_BUILTIN, HIGH);
   while(1){
-  delay(100);
+    delay(300);
+    digitalWrite(LED_BUILTIN, state);
+    state = 1 - state;  
   }
 
 }
@@ -47,7 +56,7 @@ void loop_reset(){
   }
 }
 
-int state = HIGH;
+
 
 void loop() {
 
@@ -57,11 +66,13 @@ void loop() {
     for(int i = 0; i < count; i++) {
       while(Serial.available() <=0);
       unsigned char command = Serial.read();
-      if(command==PAN_COMMAND) {
+      if(command == WAKE_UP_COMMAND) {
+         Serial.write(command);
+         state = HIGH;
+         digitalWrite(LED_BUILTIN, state);
+      } else if(command==PAN_COMMAND) {
         while(Serial.available() <=0);
         pan_pos = Serial.read();
-        if(pan_pos == 10)
-          lock();
         Serial.write(pan_pos);
         pan_servo.write(pan_pos);
       } else if (command==TILT_COMMAND) {
@@ -72,7 +83,7 @@ void loop() {
       } else {
         lock(); //unknown command
       }
-    }    
+    }
   }
 }
 

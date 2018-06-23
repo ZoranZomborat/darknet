@@ -223,7 +223,7 @@ void validate_yolo_recall(char *cfg, char *weights)
 
         int nboxes = 0;
         detection *dets = get_network_boxes(net, orig.w, orig.h, thresh, 0, 0, 1, &nboxes);
-        if (nms) do_nms_obj(dets, side*side*l.n, 1, nms);
+        if (nms) process_detections(dets, side*side*l.n, 1, nms);
 
         char labelpath[4096];
         find_replace(path, "images", "labels", labelpath);

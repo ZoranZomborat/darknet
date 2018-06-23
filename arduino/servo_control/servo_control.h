@@ -19,8 +19,10 @@
 
 #define DELAY_TIME      50
 
-#define PAN_COMMAND     48
-#define TILT_COMMAND    49
+#define PAN_COMMAND       48
+#define TILT_COMMAND      49
+#define WAKE_UP_COMMAND   50
+#define SHUT_DOWN_COMMAND 51
 
 
 #endif
