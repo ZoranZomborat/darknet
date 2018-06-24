@@ -42,6 +42,8 @@ int state = HIGH;
 
 void lock() {
   reset_servo();
+  pan_servo.detach();
+  tilt_servo.detach();
   while(1){
     delay(300);
     digitalWrite(LED_BUILTIN, state);

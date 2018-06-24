@@ -21,7 +21,7 @@
 #define MIDDLE  ((L_LIMIT + U_LIMIT)>>1)
 
 #define PAN_START       MIDDLE
-#define TILT_START      U_LIMIT
+#define TILT_START      140
 
 
 //#define BAUDRATE        1000000
@@ -34,7 +34,8 @@
 #define SHUT_DOWN_COMMAND   51
 
 
-#define CENTER_WINDOW   50
+#define CENTER_WINDOW_W   75
+#define CENTER_WINDOW_H   50
 
 #define READBACK_TIMER  16
 
@@ -42,7 +43,7 @@
 #define TILT_STEP        1
 
 void ard_serial_init();
-void track_detections(image im, detection *dets, int num, float thresh, int classIdx);
+int track_detections(image im, detection *dets, int num, float thresh, int classIdx);
 void ard_serial_end();
 
 #endif

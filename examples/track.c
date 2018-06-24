@@ -115,11 +115,9 @@ detection *predictions_avg(network *net, int *nboxes)
 }
 
 void logResult(float fps,int  frame_count) {
-//    printf("\033[2J");
-//    printf("\033[1;1H");
-//    printf("\nFPS:%.1f\n", fps);
-//    printf("Frame_count %d\n", frame_count);
-//    printf("Objects:\n\n");
+    printf("\033[2J");
+    printf("\033[1;1H");
+    printf("\nFPS:%.1f\n", fps);
 }
 
 void *thread_detect(void *ptr)
@@ -138,13 +136,18 @@ void *thread_detect(void *ptr)
         process_detections(dets, &nboxes, l.classes, overlappingFactor);
 
     image display = buff[(buff_index+2) % 3];
-    draw_detections(display, dets, nboxes, gThresh, gNames, gAlphabet, drawClasses);
-    logResult(fps, frame_count);
+    int best_match = -1;
 
 #ifdef ARDUINO_CTRL
     if (gTrack)
-        track_detections(display, dets, nboxes, gThresh, gClassIdx);
+        best_match = track_detections(display, dets, nboxes, gThresh, gClassIdx);
 #endif
+
+    draw_detections_track(display, dets, nboxes, gThresh, gNames, gAlphabet, drawClasses, best_match);
+    //draw_detections(display, dets, nboxes, gThresh, gNames, gAlphabet, drawClasses);
+    logResult(fps, frame_count);
+
+
 
     free_detections(dets, nboxes);
     detection_index = (detection_index + 1)%BUFF_SIZE;
@@ -278,10 +281,6 @@ void track(float thresh, char **names, int classes)
     pthread_t detect_thread;
     pthread_t fetch_thread;
 
-#ifdef ARDUINO_CTRL
-    ard_serial_init();
-#endif
-
     srand(2222222);
 
     int count = 0;
@@ -301,10 +300,6 @@ void track(float thresh, char **names, int classes)
         pthread_join(detect_thread, 0);
         ++count;
     }
-
-#ifdef ARDUINO_CTRL
-    ard_serial_end();
-#endif
 
 }
 
@@ -337,9 +332,17 @@ int main(int argc, char **argv)
 
     network_init(cfg, weights);
 
+#ifdef ARDUINO_CTRL
+    ard_serial_init();
+#endif
+
     cam_init(cam_index, width, height);
 
     track(thresh, names, classes);
+
+#ifdef ARDUINO_CTRL
+    ard_serial_end();
+#endif
 
     return 0;
 }
